@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Trivia Baseball</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Oswald', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+            background-image: linear-gradient(135deg, #bfdbfe 1px, transparent 1px); /* bg-blue-200 stripes */
+            background-size: 8px 8px;
+            transition: background-color 0.1s ease-out;
+        }
+        @keyframes redFlash {
+            0%, 100% { background-color: #f87171; background-image: none; }
+            50% { background-color: #fecaca; background-image: none; }
+        }
+        .flash-red {
+            animation: redFlash 0.4s ease-out;
+            background-image: none !important;
+        }
+        .correct-answer {
+            background-color: #4ade80 !important; color: #14532d !important; border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #f87171 !important; color: #7f1d1d !important; border-color: #ef4444 !important;
+        }
+        #answer-options button { min-height: 3rem; }
+        .content-card { background-color: rgba(255, 255, 255, 0.95); }
+        /* Style for difficulty buttons */
+        .difficulty-button {
+             transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .difficulty-button:hover {
+             transform: translateY(-2px);
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+         .difficulty-button:active {
+             transform: translateY(0px);
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="content-card rounded-lg shadow-xl p-6 md:p-8 w-full max-w-2xl text-center">
+
+        <h1 class="text-2xl md:text-3xl font-bold text-blue-800 mb-6 uppercase tracking-wide">MLB Trivia Baseball!</h1>
+
+        <div id="difficulty-selection" class="mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Select Difficulty:</h2>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button id="easy-button" data-difficulty="easy" class="difficulty-button bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md uppercase tracking-wider">Easy</button>
+                <button id="medium-button" data-difficulty="medium" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-md uppercase tracking-wider">Medium</button>
+                <button id="hard-button" data-difficulty="hard" class="difficulty-button bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md uppercase tracking-wider">Hard</button>
+            </div>
+        </div>
+
+        <div id="game-area" class="hidden">
+            <div id="score-display" class="text-lg font-semibold text-gray-700 mb-6">
+                Correct Answers: <span id="current-score">0</span> / 5
+            </div>
+
+            <div id="question-area" class="mb-6 min-h-[6rem] flex items-center justify-center">
+                <p id="question-text" class="text-xl md:text-2xl font-semibold text-gray-900"></p>
+            </div>
+
+            <div id="answer-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                </div>
+
+            <div id="feedback-area" class="mt-4 text-lg font-bold h-6">
+                 </div>
+        </div>
+
+         <div id="end-message-area" class="hidden mt-6 text-center">
+            <h2 id="end-message-text" class="text-3xl font-bold mb-4 uppercase tracking-wider"></h2>
+            <button id="play-again-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow transition duration-200 uppercase">
+                Play Again?
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Trivia Data by Difficulty ---
+        const triviaData = {
+            easy: [
+                { question: "Who holds the MLB record for career home runs?", options: ["Hank Aaron", "Babe Ruth", "Barry Bonds", "Willie Mays"], correctAnswer: "Barry Bonds" },
+                { question: "Which player earned the nickname 'The Iron Horse'?", options: ["Cal Ripken Jr.", "Babe Ruth", "Joe DiMaggio", "Lou Gehrig"], correctAnswer: "Lou Gehrig" },
+                { question: "Who broke Babe Ruth's long-standing career home run record in 1974?", options: ["Willie Mays", "Hank Aaron", "Frank Robinson", "Reggie Jackson"], correctAnswer: "Hank Aaron" },
+                { question: "Who was the last player to hit .400 in a season (.406 in 1941)?", options: ["Ted Williams", "George Brett", "Tony Gwynn", "Rod Carew"], correctAnswer: "Ted Williams" },
+                { question: "Which team originally drafted Ken Griffey Jr. first overall in 1987?", options: ["Seattle Mariners", "Cincinnati Reds", "New York Yankees", "Atlanta Braves"], correctAnswer: "Seattle Mariners" }
+            ],
+            medium: [
+                { question: "Who holds the American League single-season home run record (62 in 2022)?", options: ["Roger Maris", "Aaron Judge", "Babe Ruth", "Alex Rodriguez"], correctAnswer: "Aaron Judge" },
+                { question: "Who is MLB's all-time career hits leader?", options: ["Ty Cobb", "Hank Aaron", "Pete Rose", "Stan Musial"], correctAnswer: "Pete Rose" },
+                { question: "Which pitcher has the most career no-hitters (7)?", options: ["Sandy Koufax", "Nolan Ryan", "Cy Young", "Randy Johnson"], correctAnswer: "Nolan Ryan" },
+                { question: "Who stole the most bases in a single season (130 in 1982)?", options: ["Lou Brock", "Maury Wills", "Rickey Henderson", "Vince Coleman"], correctAnswer: "Rickey Henderson" },
+                { question: "Which player has the highest recognized career batting average (.367)?", options: ["Rogers Hornsby", "Ty Cobb", "Shoeless Joe Jackson", "Ted Williams"], correctAnswer: "Ty Cobb" },
+                { question: "Which player holds the record for most consecutive games played (2,632)?", options: ["Lou Gehrig", "Cal Ripken Jr.", "Everett Scott", "Steve Garvey"], correctAnswer: "Cal Ripken Jr." }
+            ],
+            hard: [
+                 { question: "Who is the only player to win MVP awards in both the American League and National League?", options: ["Alex Rodriguez", "Frank Robinson", "Barry Bonds", "Miguel Cabrera"], correctAnswer: "Frank Robinson" },
+                 { question: "Who is the only pitcher to throw consecutive no-hitters (in 1938)?", options: ["Johnny Vander Meer", "Cy Young", "Addie Joss", "Max Scherzer"], correctAnswer: "Johnny Vander Meer" },
+                 { question: "Who won the first ever Cy Young Award in 1956?", options: ["Don Newcombe", "Warren Spahn", "Bob Feller", "Early Wynn"], correctAnswer: "Don Newcombe" },
+                 { question: "Who hit the 'Shot Heard 'Round the World' walk-off home run in the 1951 NL pennant race?", options: ["Bobby Thomson", "Willie Mays", "Ralph Branca", "Duke Snider"], correctAnswer: "Bobby Thomson" },
+                 { question: "Who holds the single-season record for Runs Batted In (191 in 1930)?", options: ["Hack Wilson", "Lou Gehrig", "Babe Ruth", "Jimmie Foxx"], correctAnswer: "Hack Wilson" }
+            ]
+        };
+
+        // --- DOM Elements ---
+        const scoreDisplay = document.getElementById('current-score');
+        const questionText = document.getElementById('question-text');
+        const answerOptionsContainer = document.getElementById('answer-options');
+        const feedbackArea = document.getElementById('feedback-area');
+        const endMessageArea = document.getElementById('end-message-area');
+        const endMessageText = document.getElementById('end-message-text');
+        const playAgainButton = document.getElementById('play-again-button');
+        const bodyElement = document.body;
+        const difficultySelectionDiv = document.getElementById('difficulty-selection');
+        const gameAreaDiv = document.getElementById('game-area');
+        const easyButton = document.getElementById('easy-button');
+        const mediumButton = document.getElementById('medium-button');
+        const hardButton = document.getElementById('hard-button');
+
+
+        // --- Game State ---
+        let currentScore = 0;
+        const winScore = 5; // Win condition remains 5 correct for all levels
+        let currentQuestions = []; // Holds questions for the selected difficulty
+        let currentQuestionIndex = 0;
+        let acceptingAnswers = true;
+        let selectedDifficulty = ''; // To store chosen difficulty
+
+        // --- Utility Functions ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Game Functions ---
+        function selectDifficulty(difficulty) {
+            console.log(`Difficulty selected: ${difficulty}`);
+            selectedDifficulty = difficulty;
+            // Hide difficulty selection, show game area
+            difficultySelectionDiv.classList.add('hidden');
+            gameAreaDiv.classList.remove('hidden');
+            endMessageArea.classList.add('hidden'); // Ensure end message is hidden
+            startGame();
+        }
+
+        function startGame() {
+            console.log("Starting game with difficulty:", selectedDifficulty);
+            currentScore = 0;
+            currentQuestionIndex = 0;
+            acceptingAnswers = true;
+            scoreDisplay.textContent = currentScore;
+            feedbackArea.textContent = '';
+            bodyElement.classList.remove('flash-red'); // Reset background just in case
+            bodyElement.style.backgroundColor = '';
+            bodyElement.style.backgroundImage = '';
+
+            // Get and shuffle questions for the selected difficulty
+            if (!triviaData[selectedDifficulty]) {
+                console.error("Invalid difficulty selected:", selectedDifficulty);
+                // Default to medium or show error
+                selectedDifficulty = 'medium';
+            }
+            currentQuestions = shuffleArray([...triviaData[selectedDifficulty]]);
+
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            // Check if enough questions exist for the selected difficulty
+            if (currentQuestionIndex >= currentQuestions.length) {
+                console.log("Ran out of questions for this difficulty.");
+                endGame(false); // End game, indicating win condition not met
+                return;
+            }
+
+            acceptingAnswers = true;
+            const currentQuestionData = currentQuestions[currentQuestionIndex];
+            questionText.textContent = currentQuestionData.question;
+            answerOptionsContainer.innerHTML = ''; // Clear previous buttons
+
+            const options = shuffleArray([...currentQuestionData.options]);
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = "bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded-lg shadow transition duration-150 ease-in-out w-full text-left md:text-center uppercase tracking-wide";
+                button.addEventListener('click', () => selectAnswer(option, button));
+                answerOptionsContainer.appendChild(button);
+            });
+        }
+
+        function selectAnswer(selectedOption, buttonElement) {
+            if (!acceptingAnswers) return;
+            acceptingAnswers = false;
+
+            const currentQuestionData = currentQuestions[currentQuestionIndex];
+            const correctAnswer = currentQuestionData.correctAnswer;
+            const buttons = answerOptionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedOption === correctAnswer) {
+                // Correct
+                currentScore++;
+                scoreDisplay.textContent = currentScore;
+                buttonElement.classList.add('correct-answer');
+                feedbackArea.textContent = "Correct!";
+                feedbackArea.classList.add('text-green-600');
+                feedbackArea.classList.remove('text-red-600');
+
+                if (currentScore >= winScore) {
+                     setTimeout(() => endGame(true), 1000);
+                } else {
+                    currentQuestionIndex++;
+                    setTimeout(displayQuestion, 1500);
+                }
+            } else {
+                // Incorrect
+                buttonElement.classList.add('incorrect-answer');
+                feedbackArea.textContent = `Wrong! It was ${correctAnswer}`;
+                feedbackArea.classList.add('text-red-600');
+                feedbackArea.classList.remove('text-green-600');
+                flashScreenRed();
+
+                buttons.forEach(btn => {
+                    if (btn.textContent === correctAnswer) {
+                        btn.classList.add('correct-answer');
+                    }
+                });
+
+                currentQuestionIndex++;
+                // Check if there are more questions before scheduling next display
+                if (currentQuestionIndex < currentQuestions.length) {
+                     setTimeout(displayQuestion, 2500);
+                } else {
+                     // Ran out of questions after wrong answer
+                     setTimeout(() => endGame(false), 2500);
+                }
+            }
+
+             const feedbackClearDelay = (selectedOption === correctAnswer) ? 1400 : 2400;
+             setTimeout(() => { feedbackArea.textContent = ''; }, feedbackClearDelay);
+        }
+
+        function flashScreenRed() {
+            bodyElement.classList.add('flash-red');
+            setTimeout(() => {
+                 bodyElement.classList.remove('flash-red');
+                 bodyElement.style.backgroundColor = '';
+                 bodyElement.style.backgroundImage = '';
+            }, 400);
+        }
+
+        function showDifficultySelection() {
+             console.log("Showing difficulty selection.");
+             gameAreaDiv.classList.add('hidden');
+             endMessageArea.classList.add('hidden');
+             difficultySelectionDiv.classList.remove('hidden');
+        }
+
+        function endGame(won) {
+            console.log("Game ended. Won:", won);
+            acceptingAnswers = false; // Stop accepting answers
+            gameAreaDiv.classList.add('hidden'); // Hide game area
+            endMessageArea.classList.remove('hidden'); // Show end message area
+
+            if (won) {
+                 endMessageText.textContent = "YOU WIN!";
+                 endMessageText.className = 'text-3xl font-bold text-green-600 mb-4 uppercase tracking-wider'; // Green color for win
+            } else {
+                 endMessageText.textContent = "Game Over!"; // Or "Ran out of questions!"
+                 endMessageText.className = 'text-3xl font-bold text-red-600 mb-4 uppercase tracking-wider'; // Red color for loss/end
+            }
+        }
+
+        // --- Event Listeners ---
+        easyButton.addEventListener('click', () => selectDifficulty('easy'));
+        mediumButton.addEventListener('click', () => selectDifficulty('medium'));
+        hardButton.addEventListener('click', () => selectDifficulty('hard'));
+        playAgainButton.addEventListener('click', showDifficultySelection); // Go back to difficulty selection
+
+        // --- Initial Setup ---
+        // Game starts implicitly when user clicks a difficulty button.
+        // Ensure game area and end message are hidden initially.
+         document.addEventListener('DOMContentLoaded', () => {
+             gameAreaDiv.classList.add('hidden');
+             endMessageArea.classList.add('hidden');
+             difficultySelectionDiv.classList.remove('hidden');
+         });
+
+    </script>
+
+</body>
+</html>
+
